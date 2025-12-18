@@ -17,7 +17,7 @@ I configured **Microsoft Entra Connect** to sync specific OUs (`ad.nylabs.com`) 
 
 | Connect Config Success | Synced Cloud Users |
 | :---: | :---: |
-| [Entra Config]<img width="830" height="222" alt="config-complete-3" src="https://github.com/user-attachments/assets/9904ec2c-e307-4247-8505-ce07e86982a5" />
+ [Entra Config]<img width="830" height="222" alt="config-complete-3" src="https://github.com/user-attachments/assets/9904ec2c-e307-4247-8505-ce07e86982a5" />
 
  *Fig 1: Identity Sync pipeline established.* 
 
@@ -59,7 +59,8 @@ I verified the local `MonAgentCore` process was active, isolating the issue to a
 
 | Agent Diagnosis | The Engineering Fix |
 | :---: | :---: |
-| [Diagnosis](images/Screenshot_2025-12-17_162133.png) |
+ [Diagnosis]<img width="551" height="163" alt="azure-monitor-agent-running-11" src="https://github.com/user-attachments/assets/1869904f-6057-4c30-acb7-cb55bc04dde6" />
+ 
  *Fig 5: Diagnosing the "Invalid" agent state.* 
 
 
@@ -73,7 +74,7 @@ Immediately after the fix, raw logs began flowing. My custom **KQL Analytics Rul
 
 | Raw Log Ingestion | Final Alert |
 | :---: | :---: |
-| [Logs]<img width="897" height="454" alt="password-attack-log-13" src="https://github.com/user-attachments/assets/19c61d0b-e70b-4aab-bc36-e074510664b1" />
+ [Logs]<img width="897" height="454" alt="password-attack-log-13" src="https://github.com/user-attachments/assets/19c61d0b-e70b-4aab-bc36-e074510664b1" />
 
  *Fig 7: Security events appearing in Sentinel.*
 
