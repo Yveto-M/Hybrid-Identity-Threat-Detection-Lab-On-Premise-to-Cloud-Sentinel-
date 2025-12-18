@@ -19,13 +19,13 @@ I configured **Microsoft Entra Connect** to sync specific OUs (`ad.nylabs.com`) 
 | :---: | :---: |
 | [Entra Config]<img width="830" height="222" alt="config-complete-3" src="https://github.com/user-attachments/assets/9904ec2c-e307-4247-8505-ce07e86982a5" />
 
-| *Fig 1: Identity Sync pipeline established.* |
+ *Fig 1: Identity Sync pipeline established.* 
 
 
 
 [Entra Users]<img width="826" height="457" alt="ad-zync-users-4" src="https://github.com/user-attachments/assets/c76f859c-9bbf-482c-8db5-b35e7756ed99" />
 
-| *Fig 2: Validation of on-prem users in Entra ID.* |
+ *Fig 2: Validation of on-prem users in Entra ID.* 
 
 ### 1.2 Hybrid Server Onboarding
 I extended the Azure Control Plane to the on-premise Domain Controller using **Azure Arc**, allowing for centralized governance and monitoring.
@@ -60,12 +60,12 @@ I verified the local `MonAgentCore` process was active, isolating the issue to a
 | Agent Diagnosis | The Engineering Fix |
 | :---: | :---: |
 | [Diagnosis](images/Screenshot_2025-12-17_162133.png) |
-| *Fig 5: Diagnosing the "Invalid" agent state.* |
+ *Fig 5: Diagnosing the "Invalid" agent state.* 
 
 
 [Fix]<img width="899" height="396" alt="troubleshooting-add-vm-to-resources-12" src="https://github.com/user-attachments/assets/2696fcac-be13-4e77-803b-492dec5c5d6d" />
- |
- *Fig 6: Forcing a configuration refresh via DCR.* |
+ 
+ *Fig 6: Forcing a configuration refresh via DCR.* 
 
 ### 3.2 Detection & Alerts
 **Result:**
@@ -75,12 +75,12 @@ Immediately after the fix, raw logs began flowing. My custom **KQL Analytics Rul
 | :---: | :---: |
 | [Logs]<img width="897" height="454" alt="password-attack-log-13" src="https://github.com/user-attachments/assets/19c61d0b-e70b-4aab-bc36-e074510664b1" />
 
-| *Fig 7: Security events appearing in Sentinel.*|
+ *Fig 7: Security events appearing in Sentinel.*
 
 
 [Alert]<img width="630" height="308" alt="Alert-threat-detection-15" src="https://github.com/user-attachments/assets/68c875ec-3ed5-4c1e-b96b-a60c5514e8c8" />
  
-| *Fig 8: The final "Green Board" detection.* |
+ *Fig 8: The final "Green Board" detection.* 
 
 ---
 
