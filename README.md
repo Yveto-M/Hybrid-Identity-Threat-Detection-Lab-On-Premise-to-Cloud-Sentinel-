@@ -5,86 +5,89 @@
 **Objective:** Design a "Zero Trust" hybrid monitoring pipeline that detects on-premise identity attacks (Active Directory) using cloud-native SIEM (Microsoft Sentinel).  
 **Tech Stack:** Azure Arc, Microsoft Sentinel, Windows Server 2022 (AD DS), Kali Linux, Azure Monitor Agent (AMA).
 
-> **Context:** This project demonstrates the engineering required to bridge legacy on-premise infrastructure with modern cloud security tools, specifically addressing the challenges of log ingestion and agent health in a hybrid environment (FedCivIT alignment).
+> **Context:** This project demonstrates the engineering required to bridge legacy on-premise infrastructure with modern cloud security tools, specifically addressing the challenges of log ingestion and agent health in a hybrid environment.
 
 ---
 
-## 🏗️ Phase 1: Hybrid Infrastructure & Identity Sync
-**Goal:** Establish a "One Identity" model by onboarding a local Domain Controller to Azure Arc and syncing users to Entra ID.
+## 🏗️ Section 1: Architecture (The Build)
+**Goal:** Establish a "One Identity" model by syncing on-premise Active Directory users to Microsoft Entra ID and onboarding the server to Azure Arc.
 
-* **Infrastructure:** Deployed Windows Server 2022 (`Hybrid-DC-01`) and onboarded it to Azure via **Azure Arc**.
-* **Identity Sync:** Configured **Microsoft Entra Connect** to replicate on-premise OUs (`ad.nylabs.com`) to the cloud.
+### 1.1 Identity Synchronization
+I configured **Microsoft Entra Connect** to sync specific OUs (`ad.nylabs.com`) and validated that identity data was replicating to the cloud tenant.
 
-| Azure Arc Onboarding | Entra Connect Sync |
+| Connect Config Success | Synced Cloud Users |
 | :---: | :---: |
-| ![Arc Connected]<img width="862" height="316" alt="hybrid-DC-implemented-on-azure-10" src="https://github.com/user-attachments/assets/e4bbff2f-b28a-4442-aa69-44c89d342d3f" />
-| *Fig 1: Server successfully onboarded to Azure Arc.* 
+| ![Entra Config]<img width="830" height="222" alt="config-complete-3" src="https://github.com/user-attachments/assets/9904ec2c-e307-4247-8505-ce07e86982a5" />
+
+| *Fig 1: Identity Sync pipeline established.* |
 
 
- 
- | ![Entra Connect Config]<img width="830" height="222" alt="config-complete-3" src="https://github.com/user-attachments/assets/8dd31d36-2125-4c2d-9c0c-0933df57b526" />
- *Fig 2: Entra Connect Sync configuration complete.* |
 
-**Validation:**
-Verified that on-premise users (e.g., *James Holden*) were successfully replicated to Entra ID with the "On-premises sync enabled" attribute.
+![Entra Users]<img width="826" height="457" alt="ad-zync-users-4" src="https://github.com/user-attachments/assets/c76f859c-9bbf-482c-8db5-b35e7756ed99" />
 
-![Synced Users]<img width="826" height="457" alt="ad-zync-users-4" src="https://github.com/user-attachments/assets/f54c9143-9a9b-41f4-9549-23b9b88f567d" />
+| *Fig 2: Validation of on-prem users in Entra ID.* |
 
-*Fig 3: Validation of hybrid user identity synchronization in the Entra ID portal.*
+### 1.2 Hybrid Server Onboarding
+I extended the Azure Control Plane to the on-premise Domain Controller using **Azure Arc**, allowing for centralized governance and monitoring.
+
+![Arc Connected]<img width="862" height="316" alt="hybrid-DC-implemented-on-azure-10" src="https://github.com/user-attachments/assets/70ff8e88-2960-41e1-b4d6-d6972983b562" />
+
+*Fig 3: Server `Hybrid-DC-01` successfully onboarded to Azure Arc.*
 
 ---
 
-## ⚔️ Phase 2: Adversary Simulation (Red Team)
+## ⚔️ Section 2: Attack (The Red Team)
 **Goal:** Generate realistic "noise" to test the detection pipeline.
-**Tooling:** Kali Linux, `crackmapexec` (SMB), Custom User Lists.
 
-I simulated a **Password Spray Attack** against the Domain Controller using a custom user list (`users.txt`). The attack attempted to bruteforce the `Administrator` and service accounts via SMB.
+I simulated a **Password Spray Attack** using `crackmapexec` on Kali Linux, targeting the Domain Administrator and service accounts via SMB to generate `STATUS_LOGON_FAILURE` (Event 4625) logs.
 
-![Attack Execution]<img width="739" height="322" alt="crackmap-execution-7" src="https://github.com/user-attachments/assets/ec8889ee-27f2-430e-b41f-9489e933c503" />
+![Attack Execution]<img width="739" height="322" alt="crackmap-execution-7" src="https://github.com/user-attachments/assets/11f457f8-a3ff-4388-ab04-6d4e1d5d0ec8" />
 
-*Fig 4: Kali Linux executing `crackmapexec` against the DC, generating `STATUS_LOGON_FAILURE` (Event 4625).*
+*Fig 4: Executing the brute-force attack against the DC.*
 
 ---
 
-## 🔧 Phase 3: Engineering Challenge (The "War Story")
+## 🛡️ Section 3: Defense (Blue Team)
+**Goal:** Ingest the attack logs, troubleshoot agent failures, and trigger an automated alert.
+
+### 3.1 Engineering Challenge (Troubleshooting)
 **The Issue:**
-After deploying the **Azure Monitor Agent (AMA)**, the server reported a "Heartbeat" success, but **Security Logs (Event ID 4625)** were not appearing in Sentinel.
+Despite a successful Arc connection, **Security Logs** were not arriving in Sentinel. The Azure portal indicated the machine was "Invalid" for data collection.
 
-**Root Cause Analysis:**
-1.  **Local Validation:** Confirmed Windows Event Viewer was generating logs locally (Audit Policy was correct).
-2.  **Agent Diagnosis:** The Azure Arc "Management Services" view indicated "0 selected machines are valid," pointing to a corrupted agent state or configuration mismatch.
+**Diagnosis & Fix:**
+I verified the local `MonAgentCore` process was active, isolating the issue to a **Data Collection Rule (DCR)** desync. I performed a **Force Refresh** by removing and re-adding the VM to the DCR scope, which successfully triggered a configuration download.
 
-| Agent Diagnosis | Verification |
+| Agent Diagnosis | The Engineering Fix |
 | :---: | :---: |
-| ![Invalid State](Screenshot_2025-12-17_162133.png) 
-| *Fig 5: Azure Arc indicating the machine was invalid for insights.* 
+| ![Diagnosis](images/Screenshot_2025-12-17_162133.png) |
+| *Fig 5: Diagnosing the "Invalid" agent state.* |
 
 
+![Fix]<img width="899" height="396" alt="troubleshooting-add-vm-to-resources-12" src="https://github.com/user-attachments/assets/2696fcac-be13-4e77-803b-492dec5c5d6d" />
+ |
+ *Fig 6: Forcing a configuration refresh via DCR.* |
 
-| ![Process Check]<img width="551" height="163" alt="azure-monitor-agent-running-11" src="https://github.com/user-attachments/assets/9a80ce4b-9672-46af-96eb-bd50bba83b29" />
+### 3.2 Detection & Alerts
+**Result:**
+Immediately after the fix, raw logs began flowing. My custom **KQL Analytics Rule** detected the password spray pattern (>5 failures in 1 hour) and triggered a **High Severity Incident**.
 
-| *Fig 6: Verifying `MonAgentCore` process locally.* |
+| Raw Log Ingestion | Final Alert |
+| :---: | :---: |
+| ![Logs]<img width="897" height="454" alt="password-attack-log-13" src="https://github.com/user-attachments/assets/19c61d0b-e70b-4aab-bc36-e074510664b1" />
 
-**The Engineering Fix:**
-1.  Performed a targeted uninstall of the corrupted `AzureMonitorWindowsAgent` extension.
-2.  **Force-Provisioning:** Manually removed and re-added the server to the **Data Collection Rule (DCR)** scope to trigger a fresh config push.
-3.  **Result:** Log ingestion was restored immediately after the DCR refresh.
+| *Fig 7: Security events appearing in Sentinel.*|
 
-![DCR Fix]<img width="899" height="396" alt="troubleshooting-add-vm-to-resources-12" src="https://github.com/user-attachments/assets/504f1f25-6f31-44a5-b7cd-db4fa320d115" />
 
-*Fig 7: Re-associating the server with the Data Collection Rule to force-fix the agent.*
+![Alert]<img width="630" height="308" alt="Alert-threat-detection-15" src="https://github.com/user-attachments/assets/68c875ec-3ed5-4c1e-b96b-a60c5514e8c8" />
+ 
+| *Fig 8: The final "Green Board" detection.* |
 
 ---
 
-## 🎯 Phase 4: Detection & Outcomes
-**Goal:** Convert raw logs into high-fidelity alerts.
+## 📝 Lab Summary
+This lab simulated a real-world hybrid attack scenario. I built the infrastructure (Arc + Entra Connect), simulated the adversary (Kali Linux), and engineered the defense (Sentinel).
 
-Once the pipeline was fixed, I wrote a **KQL Analytics Rule** to detect the password spray pattern (>5 failures in 1 hour).
-
-**The Query:**
-```kusto
-SecurityEvent
-| where EventID == 4625
-| where TimeGenerated > ago(1h)
-| summarize FailureCount = count() by IpAddress, Account
-| where FailureCount >= 5
+**Key Takeaways:**
+* **Architecture:** Successfully bridged on-premise AD with Azure Entra ID.
+* **Engineering:** Troubleshot and resolved a complex "Silent Failure" of the Azure Monitor Agent.
+* **Detection:** Reduced Mean Time to Detect (MTTD) to <5 minutes for Identity attacks.
